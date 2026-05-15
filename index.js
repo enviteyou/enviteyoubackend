@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/AuthenticationRoutes.js';
+import invitationRoutes from './routes/InvitationRoutes.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
@@ -15,6 +16,7 @@ app.use(cors({
 }));
 
 app.use('/auth',authRoutes);
+app.use('/invitations',invitationRoutes);
 
 const PORT = process.env.PORT || 5000;
 
