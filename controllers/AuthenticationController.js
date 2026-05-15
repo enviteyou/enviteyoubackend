@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
+import User from '../models/user.js';
 import {OAuth2Client} from 'google-auth-library';
 /**
  * @desc    Register a new user
