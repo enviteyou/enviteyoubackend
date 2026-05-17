@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { googleLogin, loginUser, registerUser } from '../controllers/AuthenticationController.js';
+import { googleLogin, loginUser, registerUser, loginAdmin, getMe } from '../controllers/AuthenticationController.js';
 
 const router = Router();
 
@@ -12,6 +12,12 @@ router.post('/register', registerUser);
 // @desc    Login user
 // @access  Public
 router.post('/login', loginUser);
+
+// admin login - returns 403 if credentials valid but user is not admin
+router.post('/login-admin', loginAdmin);
+
+// return current user from cookie token
+router.get('/me', getMe);
 
 // @route   POST /auth/google
 // @desc    Google OAuth login

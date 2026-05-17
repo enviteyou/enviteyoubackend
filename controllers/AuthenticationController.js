@@ -44,16 +44,68 @@ export const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials',success:false });
     } 
-    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
     res.cookie('accesstoken', token, {
        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 1 day
       });
     res.status(200).json({ token,success:true });
   } catch (error) {
     res.status(500).json({ message: 'Server error',success:false });
+  }
+};
+
+/**
+ * @desc    Login as admin
+ * @route   POST /auth/login-admin
+ * @access  Public
+ */
+export const loginAdmin = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials', success: false });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials', success: false });
+    }
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized access', success: false });
+    }
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    res.cookie('accesstoken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+    res.status(200).json({ token, success: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', success: false });
+  }
+};
+
+/**
+ * @desc    Return current user info from token
+ * @route   GET /auth/me
+ * @access  Private (uses cookie)
+ */
+export const getMe = async (req, res) => {
+  try {
+    const authToken = req.cookies?.accesstoken;
+    if (!authToken) return res.status(401).json({ message: 'Not authenticated', success: false });
+    const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found', success: false });
+    return res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.error('getMe error', error.message);
+    return res.status(500).json({ message: 'Server error', success: false });
   }
 };
 
@@ -82,7 +134,7 @@ export const googleLogin = async (req,res)=>{
         role
       })
     }
-    const accesstoken = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const accesstoken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
     res.cookie('accesstoken', accesstoken, {
        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
