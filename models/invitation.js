@@ -26,6 +26,18 @@ const invitationSchema = new mongoose.Schema(
     whatsapp: String,
     hashtag: String,
 
+    templateId: {
+      type: String,
+      trim: true,
+      default: "mountain",
+    },
+
+    nameOrder: {
+      type: String,
+      enum: ["brideFirst", "groomFirst"],
+      default: "brideFirst",
+    },
+
     countdown: {
       type: Boolean,
       default: true,
@@ -118,8 +130,10 @@ const invitationSchema = new mongoose.Schema(
 );
 
 invitationSchema.pre("save",function(){
-  if(this.isModified("bride") || this.isModified("groom")){
-    this.slug = slugify(`${this.bride}-weds-${this.groom}-${Date.now()}`,{lower:true,strict:true})
+  if(this.isModified("bride") || this.isModified("groom") || this.isModified("nameOrder")){
+    const firstName = this.nameOrder === "groomFirst" ? this.groom : this.bride;
+    const secondName = this.nameOrder === "groomFirst" ? this.bride : this.groom;
+    this.slug = slugify(`${firstName}-weds-${secondName}-${Date.now()}`,{lower:true,strict:true})
   }
   
 })
