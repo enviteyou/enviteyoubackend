@@ -45,7 +45,7 @@ const invitationSchema = new mongoose.Schema(
 
     invitation: {
       type: Boolean,
-      default: true,
+      default: true, 
     },
 
     blessing: String,
@@ -55,17 +55,45 @@ const invitationSchema = new mongoose.Schema(
     groomFather: String,
     groomMother: String,
 
+    grandparentsEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    brideGrandfather: String,
+    brideGrandmother: String,
+    groomGrandfather: String,
+    groomGrandmother: String,
+
     parentsOrder: {
       type: String,
       enum: [
+        "Bride's family first",
+        "Groom's family first",
+        "Both families together",
         "Bride family first",
         "Groom family first",
-        "Both families together",
       ],
-      default: "Bride family first",
+      default: "Bride's family first",
     },
 
     selectedEvents: [String],
+
+    eventDetails: {
+      type: Map,
+      of: new mongoose.Schema(
+        {
+          functionName: String,
+          date: String,
+          time: String,
+          venue: String,
+          oneLiner: String,
+          mapsLink: String,
+        },
+        { _id: false },
+      ),
+      default: {},
+    },
 
     eventDate: String,
     eventTime: String,
@@ -79,13 +107,33 @@ const invitationSchema = new mongoose.Schema(
 
     storyTitle: String,
     story: String,
+    personalityAnswers: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    generatedTags: String,
+    customHashtags: String,
+    extraTags: String,
+    infoCards: {
+      type: Map,
+      of: String,
+      default: {},
+    },
 
     galleryEnabled: {
       type: Boolean,
       default: true,
     },
-
     coverImage: String,
+    galleryLayout: {
+      type: Number,
+      default: 4,
+    },
+    galleryImages: {
+      type: [String],
+      default: [],
+    },
     galleryNote: String,
 
     infoEnabled: {
