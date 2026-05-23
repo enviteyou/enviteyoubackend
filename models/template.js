@@ -37,6 +37,11 @@ const templateSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
+		templateId: {
+			type: String,
+			trim: true,
+			index: true,
+		},
 	},
 	{
 		timestamps: true,

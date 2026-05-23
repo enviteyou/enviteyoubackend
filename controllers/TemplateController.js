@@ -1,6 +1,16 @@
 import Template from "../models/template.js";
 import cloudinary from "../config/cloudinary.js";
 
+async function getNextTemplateId() {
+  const templates = await Template.find({ templateId: { $exists: true, $nin: [null, ""] } }).select("templateId").lean();
+  const maxTemplateId = templates.reduce((max, currentTemplate) => {
+    const numericTemplateId = Number(currentTemplate.templateId);
+    return Number.isFinite(numericTemplateId) && numericTemplateId > max ? numericTemplateId : max;
+  }, 0);
+
+  return String(maxTemplateId + 1);
+}
+
 function uploadImage(file) {
   return new Promise((resolve, reject) => {
     const b64 = Buffer.from(file.buffer).toString("base64");
@@ -26,8 +36,10 @@ export const createTemplate = async (req, res) => {
     }
 
     const uploadResult = await uploadImage(req.file);
+    const templateId = String(req.body.templateId || (await getNextTemplateId())).trim();
 
     const template = await Template.create({
+      templateId,
       category: req.body.category,
       pricing: req.body.pricing,
       regularPrice: Number(req.body.regularPrice),
@@ -60,7 +72,9 @@ export const getTemplates = async (_req, res) => {
 
 export const getTemplateById = async (req, res) => {
   try {
-    const template = await Template.findById(req.params.id);
+    const template = await Template.findOne({
+      $or: [{ _id: req.params.id }, { templateId: req.params.id }],
+    });
     if (!template) {
       return res.status(404).json({ message: "Template not found", success: false });
     }
@@ -87,6 +101,7 @@ export const updateTemplate = async (req, res) => {
     const updateTemplate = await Template.findByIdAndUpdate(
       req.params.id,
       {
+        templateId: req.body.templateId !== undefined && String(req.body.templateId).trim() ? String(req.body.templateId).trim() : template.templateId,
         category: req.body.category,
         pricing: req.body.pricing,
         regularPrice: req.body.regularPrice !== undefined ? Number(req.body.regularPrice) : template.regularPrice,

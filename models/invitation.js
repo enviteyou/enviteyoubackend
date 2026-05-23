@@ -29,7 +29,7 @@ const invitationSchema = new mongoose.Schema(
     templateId: {
       type: String,
       trim: true,
-      default: "mountain",
+      default: "1",
     },
 
     nameOrder: {
