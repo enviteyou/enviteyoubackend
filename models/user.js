@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true, 
+    default: "",
   },
   email: {
     type: String, 
@@ -14,9 +14,19 @@ const userSchema = new mongoose.Schema({
     type: String, 
 
   },  
+  number: {
+    type: String,
+  },
+  googleMyBusinessLink: {
+    type: String,
+  },
+  isVendorAuthenticate: {
+    type: Boolean,
+    default: false,
+  },
   role:{
     type:String,
-    enum:["user","admin","wholesaler"],
+    enum:["user","admin","vendor"],
     default:"user"
   }
 })

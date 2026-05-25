@@ -1,9 +1,12 @@
 import express from 'express';
-import { getUsers, getUsersCount } from '../controllers/UserController.js';
+import { getUsers, getUsersCount, getVendors, updateVendorAuthentication } from '../controllers/UserController.js';
+import authenticateAdmin from '../middleware/authenticateAdmin.js';
 
 const router = express.Router();
 
-router.get('/', getUsers);
-router.get('/count', getUsersCount);
+router.get('/', authenticateAdmin, getUsers);
+router.get('/count', authenticateAdmin, getUsersCount);
+router.get('/vendors', authenticateAdmin, getVendors);
+router.patch('/vendors/:id', authenticateAdmin, updateVendorAuthentication);
 
 export default router;
