@@ -78,7 +78,7 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials',success:false });
     } 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('accesstoken', token, {
+    res.cookie('customerAccessToken', token, {
        httpOnly: true,
          secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
@@ -112,7 +112,7 @@ export const loginVendor = async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('accesstoken', token, {
+    res.cookie('vendorAccessToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
@@ -145,7 +145,7 @@ export const loginAdmin = async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('accesstoken', token, {
+    res.cookie('adminAccessToken', token, {
       httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
@@ -162,9 +162,9 @@ export const loginAdmin = async (req, res) => {
  * @route   GET /auth/me
  * @access  Private (uses cookie)
  */
-export const getMe = async (req, res) => {
+export const getCustomer = async (req, res) => {
   try {
-    const authToken = req.cookies?.accesstoken;
+    const authToken = req.cookies?.customerAccessToken 
     if (!authToken) return res.status(401).json({ message: 'Not authenticated', success: false });
     const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
@@ -173,6 +173,73 @@ export const getMe = async (req, res) => {
   } catch (error) {
     console.error('getMe error', error.message);
     return res.status(500).json({ message: 'Server error', success: false });
+  }
+};
+
+/**
+ * @desc    Return current vendor info from token
+ * @route   GET /auth/me
+ * @access  Private (uses cookie)
+ */
+export const getVendor = async (req, res) => {
+  try {
+    const authToken = req.cookies?.vendorAccessToken  
+    if (!authToken) return res.status(401).json({ message: 'Not authenticated', success: false });
+    const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found', success: false });
+    return res.status(200).json({ success: true, user });
+  }
+    catch (error) {
+    console.error('getMe error', error.message);
+    return res.status(500).json({ message: 'Server error', success: false });
+  }
+};
+
+/**
+ * @desc    Return current admin info from token
+ * @route   GET /auth/me
+ * @access  Private (uses cookie)
+ */
+export const getAdmin = async (req, res) => {
+  try {
+    const authToken = req.cookies?.adminAccessToken
+    if (!authToken) return res.status(401).json({ message: 'Not authenticated', success: false });
+    const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found', success: false });
+    return res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.error('getMe error', error.message);
+    return res.status(500).json({ message: 'Server error', success: false });
+  }
+};
+
+/**
+ * @desc    Logout current user
+ * @route   POST /auth/logout
+ * @access  Public
+ */
+export const logoutUser = async (req, res) => {
+  try {
+    res.clearCookie('customerAccessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
+    res.clearCookie('vendorAccessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
+    res.clearCookie('adminAccessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
+    return res.status(200).json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -202,7 +269,7 @@ export const googleLogin = async (req,res)=>{
       })
     }
     const accesstoken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('accesstoken', accesstoken, {
+    res.cookie('customerAccessToken', accesstoken, {
        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
