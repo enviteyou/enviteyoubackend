@@ -1,5 +1,6 @@
 import Invitation from "../models/invitation.js";
 import cloudinary from "../config/cloudinary.js";
+import jwt from "jsonwebtoken";
 
 function uploadImageToCloud(file) {
   return new Promise((resolve, reject) => {
@@ -26,6 +27,7 @@ export const createInvitation = async (req,res)=>{
 try {
   const payload = {
     ...req.body,
+    createdBy: req.user?.id || req.body?.createdBy || req.body?.userId || req.body?.objectId || req.body?.creatorId,
     grandparentsEnabled: Boolean(req.body?.grandparentsEnabled),
     parentsOrder:
       req.body?.parentsOrder === "Groom family first"
@@ -34,6 +36,16 @@ try {
           ? "Bride's family first"
           : req.body?.parentsOrder,
   };
+
+  const authToken = req.cookies?.customerAccessToken;
+  if (!payload.createdBy && authToken) {
+    try {
+      const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+      payload.createdBy = decoded?.id || payload.createdBy;
+    } catch (tokenError) {
+      console.log("Unable to decode customer token for invitation creator:", tokenError.message);
+    }
+  }
 
   // If infoCards passed as plain object, ensure it's stored as map-compatible
   if (req.body?.infoCards && typeof req.body.infoCards === 'object') {
@@ -79,6 +91,34 @@ export const getInvitationBySlug = async (req,res)=>{
     })
   }
 }
+
+/**
+ * @description Get all invitations created by the logged-in user
+ */
+export const getMyInvitations = async (req, res) => {
+  try {
+    const creatorId = req.user?.id;
+    if (!creatorId) {
+      return res.status(400).json({
+        success: false,
+        message: "User id is required",
+      });
+    }
+
+    const invitations = await Invitation.find({ createdBy: creatorId }).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: invitations.length,
+      data: invitations,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 export const uploadGalleryImage = async (req, res) => {
   try {

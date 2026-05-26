@@ -21,6 +21,12 @@ const invitationSchema = new mongoose.Schema(
       lowercase: true,
     },
 
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+    },
+
     date: String,
     venue: String,
     whatsapp: String,
