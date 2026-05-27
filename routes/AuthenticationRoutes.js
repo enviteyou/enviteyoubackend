@@ -2,6 +2,7 @@ import {Router} from 'express';
 import { googleLogin, loginUser, registerUser, loginAdmin, getCustomer,getAdmin,getVendor, logoutUser, registerVendor, loginVendor } from '../controllers/AuthenticationController.js';
 import authUser from '../middleware/authenticate.js';
 import authAdmin from '../middleware/authenticateAdmin.js';
+import authenticateVendor from '../middleware/authenticateVendor.js';
 const router = Router();
 
 // @route   POST /auth/register  
@@ -34,7 +35,7 @@ router.get('/me',authUser, getCustomer);
 router.get('/me-admin',authAdmin, getAdmin);
 
 // return current vendor user from cookie token
-router.get('/me-vendor', getVendor);
+router.get('/me-vendor', authenticateVendor, getVendor);
 
 
 
