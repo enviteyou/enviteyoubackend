@@ -36,7 +36,7 @@ export const registerUser = async (req, res) => {
  * @access  Public
  */
 export const registerVendor = async (req, res) => {
-  const { email, password, number, googleMyBusinessLink } = req.body;
+  const { email, password, number, googleMyBusinessLink, businessName, gstNumber } = req.body;
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -46,10 +46,12 @@ export const registerVendor = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       name: req.body.name || email,
+      businessName,
       email,
       password: hashedPassword,
       number,
       googleMyBusinessLink,
+      gstNumber,
       isVendorAuthenticate: false,
       role: 'vendor',
     });

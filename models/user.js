@@ -20,6 +20,12 @@ const userSchema = new mongoose.Schema({
   googleMyBusinessLink: {
     type: String,
   },
+  businessName: {
+    type: String,
+  },
+  gstNumber: {
+    type: String,
+  },
   isVendorAuthenticate: {
     type: Boolean,
     default: false,

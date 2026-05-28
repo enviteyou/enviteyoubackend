@@ -85,6 +85,20 @@ const invitationSchema = new mongoose.Schema(
 
     selectedEvents: [String],
 
+    paymentStatus: {
+      type: String,
+      default: 'pending',
+    },
+
+    amountPaid: {
+      type: Number,
+      default: 0,
+    },
+
+    razorpayOrderId: String,
+
+    razorpayPaymentId: String,
+
     eventDetails: {
       type: Map,
       of: new mongoose.Schema(

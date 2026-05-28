@@ -1,4 +1,45 @@
 import User from '../models/user.js';
+import nodemailer from 'nodemailer';
+
+const createMailTransport = () => {
+  const user = process.env.EMAIL_USER?.trim();
+  const pass = process.env.EMAIL_PASS?.trim();
+
+  if (!user || !pass) {
+    throw new Error('Email credentials are not configured');
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user,
+      pass,
+    },
+  });
+};
+
+const sendVendorApprovalEmail = async (vendor) => {
+  const transporter = createMailTransport();
+  const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
+  const businessName = vendor.businessName || vendor.name || 'your business';
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER?.trim(),
+    to: vendor.email,
+    subject: 'Your EnviteYou vendor account has been approved',
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+        <p>Hello ${vendor.name || 'Vendor'},</p>
+        <p>Your vendor account for <strong>${businessName}</strong> has been approved by our admin team.</p>
+        <p>You can now sign in to your vendor dashboard and continue managing your account.</p>
+        <p>
+          <a href="${appUrl}/vendor/signin" style="display:inline-block;padding:12px 18px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;">Sign in to vendor dashboard</a>
+        </p>
+        <p>Thank you,<br/>EnviteYou Team</p>
+      </div>
+    `,
+  });
+};
 
 export const getUsers = async (req, res) => {
   try {
@@ -37,8 +78,18 @@ export const updateVendorAuthentication = async (req, res) => {
       return res.status(404).json({ message: 'Vendor not found', success: false });
     }
 
+    const shouldNotifyApproval = Boolean(isVendorAuthenticate) && !vendor.isVendorAuthenticate;
+
     vendor.isVendorAuthenticate = Boolean(isVendorAuthenticate);
     await vendor.save();
+
+    if (shouldNotifyApproval) {
+      try {
+        await sendVendorApprovalEmail(vendor);
+      } catch (mailError) {
+        console.error('Vendor approval email failed:', mailError.message);
+      }
+    }
 
     const safeVendor = await User.findById(vendor._id).select('-password');
     return res.status(200).json({ message: 'Vendor status updated', success: true, vendor: safeVendor });
