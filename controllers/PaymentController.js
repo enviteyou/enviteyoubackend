@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import nodemailer from 'nodemailer';
 import Razorpay from 'razorpay';
 import Invitation from '../models/invitation.js';
@@ -248,42 +250,75 @@ export const generateInvoicePdf = async (req, res) => {
 			return res.status(403).json({ success: false, message: 'Forbidden' });
 		}
 
-		const doc = new PDFDocument({ size: 'A4', margin: 50 });
+		const doc = new PDFDocument({ size: 'A4', margin: 48 });
+		const invoiceNo = `EVY-${String(invitation._id).slice(-8).toUpperCase()}`;
+		const inviteUrl = `${process.env.FRONTEND_URL?.trim() || 'http://localhost:3000'}/invite/${encodeURIComponent(invitation.slug)}`;
+		const couple = [invitation.bride, invitation.groom].filter(Boolean).join(' & ') || 'Invitation';
+		const amount = Number(invitation.amountPaid || 0) / 100;
+		const logoPath = path.resolve(process.cwd(), '..', 'frontend', 'public', 'logo.png');
+		const hasLogo = fs.existsSync(logoPath);
 
 		res.setHeader('Content-Type', 'application/pdf');
-		res.setHeader('Content-Disposition', `attachment; filename=invoice-${invitation._id}.pdf`);
+		res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceNo}.pdf"`);
 
-		doc.fontSize(20).text('EnviteYou', { align: 'left' });
-		doc.moveDown();
+		doc.pipe(res);
 
-		const invoiceNo = `EVY-${String(invitation._id).slice(-8).toUpperCase()}`;
-		doc.fontSize(12).text(`Invoice: ${invoiceNo}`);
-		doc.text(`Date: ${new Date(invitation.createdAt).toLocaleString()}`);
-		doc.moveDown();
+		// Header block
+		doc.rect(0, 0, doc.page.width, 140).fill('#111827');
+		if (hasLogo) {
+			doc.image(logoPath, 48, 34, { fit: [104, 52] });
+		} else {
+			doc.fillColor('#ffffff').fontSize(26).font('Helvetica-Bold').text('EnviteYou', 48, 44);
+		}
+		doc.fillColor('#ffffff').fontSize(11).font('Helvetica').text('Digital invitation invoice', 48, 82);
 
-		doc.fontSize(12).text('Billed To:');
-		doc.fontSize(11).text(`${invitation.createdBy?.name || 'Customer'}`);
-		doc.fontSize(11).text(`${invitation.createdBy?.email || ''}`);
-		doc.moveDown();
+		doc.roundedRect(doc.page.width - 220, 36, 172, 68, 12).fill('#ffffff');
+		doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10).text('INVOICE', doc.page.width - 200, 50);
+		doc.fontSize(14).text(invoiceNo, doc.page.width - 200, 66);
 
-		doc.fontSize(12).text('Description:');
-		const couple = [invitation.bride, invitation.groom].filter(Boolean).join(' & ') || 'Invitation';
-		doc.fontSize(11).text(`Invitation for ${couple}`);
-		doc.moveDown();
+		doc.moveDown(6);
 
-		const amount = Number(invitation.amountPaid || 0) / 100;
-		doc.fontSize(12).text(`Amount: INR ${amount.toFixed(0)}`);
-		doc.moveDown();
+		// Details area
+		doc.fillColor('#111827').fontSize(12).font('Helvetica-Bold').text('Billed To', 48, 170);
+		doc.font('Helvetica').fontSize(11).text(invitation.createdBy?.name || 'Customer', 48, 188);
+		doc.text(invitation.createdBy?.email || '', 48, 203);
 
-		doc.fontSize(10).text(`Razorpay Order ID: ${invitation.razorpayOrderId || 'N/A'}`);
-		doc.text(`Razorpay Payment ID: ${invitation.razorpayPaymentId || 'N/A'}`);
-		doc.moveDown();
+		doc.font('Helvetica-Bold').text('Invoice Date', 340, 170);
+		doc.font('Helvetica').text(new Date(invitation.createdAt).toLocaleString(), 340, 188);
 
-		const inviteUrl = `${process.env.FRONTEND_URL?.trim() || 'http://localhost:3000'}/invite/${encodeURIComponent(invitation.slug)}`;
-		doc.fontSize(10).text(`Invitation URL: ${inviteUrl}`);
+		doc.font('Helvetica-Bold').text('Payment Status', 340, 220);
+		doc.font('Helvetica').text(String(invitation.paymentStatus || 'paid').toUpperCase(), 340, 238);
+
+		// Invoice table header
+		const tableTop = 280;
+		doc.roundedRect(48, tableTop, doc.page.width - 96, 34, 8).fill('#f3f4f6');
+		doc.fillColor('#6b7280').font('Helvetica-Bold').fontSize(10);
+		doc.text('Description', 60, tableTop + 12);
+		doc.text('Reference', 360, tableTop + 12);
+		doc.text('Amount', 470, tableTop + 12, { width: 120, align: 'right' });
+
+		const rowY = tableTop + 34;
+		doc.fillColor('#111827').font('Helvetica').fontSize(11);
+		doc.text(`Invitation for ${couple}`, 60, rowY + 14, { width: 280 });
+		doc.text(invitation.razorpayPaymentId || 'N/A', 360, rowY + 14, { width: 100 });
+		doc.font('Helvetica-Bold').text(`INR ${amount.toFixed(0)}`, 470, rowY + 14, { width: 120, align: 'right' });
+
+		doc.moveTo(48, rowY + 54).lineTo(doc.page.width - 48, rowY + 54).strokeColor('#e5e7eb').stroke();
+
+		// Summary box
+		const summaryTop = rowY + 84;
+		doc.roundedRect(48, summaryTop, doc.page.width - 96, 112, 14).fill('#f9fafb');
+		doc.fillColor('#111827').font('Helvetica-Bold').fontSize(11).text('Invoice Summary', 64, summaryTop + 16);
+		doc.font('Helvetica').fontSize(10).fillColor('#6b7280').text(`Order ID: ${invitation.razorpayOrderId || 'N/A'}`, 64, summaryTop + 38);
+		doc.text(`Payment ID: ${invitation.razorpayPaymentId || 'N/A'}`, 64, summaryTop + 56);
+		doc.text(`Invitation URL: ${inviteUrl}`, 64, summaryTop + 74, { width: 470 });
+		doc.fillColor('#111827').font('Helvetica-Bold').fontSize(22).text(`INR ${amount.toFixed(0)}`, 430, summaryTop + 44, { width: 160, align: 'right' });
+		doc.font('Helvetica').fontSize(9).fillColor('#6b7280').text('Total Paid', 430, summaryTop + 20, { width: 160, align: 'right' });
+
+		// Footer
+		doc.fillColor('#6b7280').font('Helvetica').fontSize(9).text('This is a system-generated invoice from EnviteYou.', 48, doc.page.height - 70, { align: 'center', width: doc.page.width - 96 });
 
 		doc.end();
-		doc.pipe(res);
 	} catch (error) {
 		console.error('generateInvoicePdf error', error.message);
 		return res.status(500).json({ success: false, message: error.message });
