@@ -29,14 +29,29 @@ function uploadImage(file) {
   });
 }
 
+async function getImageUrlFromRequest(req, fieldName, fallbackUrl = "") {
+  const uploadedFile = req.files?.[fieldName]?.[0];
+
+  if (uploadedFile) {
+    const uploadResult = await uploadImage(uploadedFile);
+    return uploadResult.secure_url;
+  }
+
+  const bodyValue = String(req.body?.[fieldName] || "").trim();
+  return bodyValue || fallbackUrl;
+}
+
 export const createTemplate = async (req, res) => {
   try {
-    if (!req.file) {
+    const featuredImageFile = req.files?.featuredImage?.[0] || req.file;
+
+    if (!featuredImageFile) {
       return res.status(400).json({ success: false, message: "featuredImage is required" });
     }
 
-    const uploadResult = await uploadImage(req.file);
+    const uploadResult = await uploadImage(featuredImageFile);
     const templateId = String(req.body.templateId || (await getNextTemplateId())).trim();
+    const secondaryImage = await getImageUrlFromRequest(req, "secondaryImage", uploadResult.secure_url);
 
     const template = await Template.create({
       templateId,
@@ -48,6 +63,7 @@ export const createTemplate = async (req, res) => {
       title: req.body.title,
       description: req.body.description,
       featuredImage: uploadResult.secure_url,
+      secondaryImage,
     });
 
     return res.status(201).json({
@@ -93,10 +109,14 @@ export const updateTemplate = async (req, res) => {
     }
 
     let imageUrl = template.featuredImage;
-    if (req.file) {
-      const uploadResult = await uploadImage(req.file);
+    if (req.files?.featuredImage?.[0] || req.file) {
+      const uploadResult = await uploadImage(req.files?.featuredImage?.[0] || req.file);
       imageUrl = uploadResult.secure_url;
     }
+
+    const secondaryImage = req.files?.secondaryImage?.[0]
+      ? (await uploadImage(req.files.secondaryImage[0])).secure_url
+      : String(req.body.secondaryImage || template.secondaryImage || template.featuredImage || "").trim();
 
     const updateTemplate = await Template.findByIdAndUpdate(
       req.params.id,
@@ -110,6 +130,7 @@ export const updateTemplate = async (req, res) => {
         title: req.body.title,
         description: req.body.description,
         featuredImage: imageUrl,
+        secondaryImage,
       },
       { new: true }
     );

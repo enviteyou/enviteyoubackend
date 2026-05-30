@@ -37,6 +37,10 @@ const templateSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
+		secondaryImage: {
+			type: String,
+			trim: true,
+		},
 		templateId: {
 			type: String,
 			trim: true,
