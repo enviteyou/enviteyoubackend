@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
   },  
   number: {
     type: String,
+    match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
   },
   googleMyBusinessLink: {
     type: String,
