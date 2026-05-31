@@ -29,7 +29,7 @@ router.post('/vendor/login', loginVendor);
 router.post('/login-admin', loginAdmin);
 
 // return current user from cookie token
-router.get('/me',authUser, getCustomer);
+router.get('/me', getCustomer);
 
 // return current admin user from cookie token
 router.get('/me-admin',authAdmin, getAdmin);

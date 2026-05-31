@@ -230,14 +230,14 @@ export const loginAdmin = async (req, res) => {
 export const getCustomer = async (req, res) => {
   try {
     const authToken = req.cookies?.customerAccessToken 
-    if (!authToken) return res.status(401).json({ message: 'Not authenticated', success: false });
+    if (!authToken) return res.status(200).json({ message: 'Not authenticated', success: false });
     const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found', success: false });
+    if (!user) return res.status(200).json({ message: 'User not found', success: false });
     return res.status(200).json({ success: true, user });
   } catch (error) {
     console.error('getMe error', error.message);
-    return res.status(500).json({ message: 'Server error', success: false });
+    return res.status(200).json({ message: 'Server error', success: false });
   }
 };
 

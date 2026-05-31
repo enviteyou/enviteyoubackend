@@ -3,7 +3,7 @@ const authUser = async (req,res,next)=>{
   try {
     const authToken = req.cookies.customerAccessToken;
     if(!authToken){
-      return res.status(409).json({message:"No token provided",success:false})
+      return res.status(401).json({message:"No token provided",success:false})
     }
     const decode = jwt.verify(authToken,process.env.JWT_SECRET)
     req.user = decode;
