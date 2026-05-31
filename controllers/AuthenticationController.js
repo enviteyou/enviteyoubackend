@@ -2,14 +2,65 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/user.js';
 import {OAuth2Client} from 'google-auth-library';
+
+const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
+const RECAPTCHA_ACTIONS = {
+  signup: 'signup',
+  vendorSignup: 'vendor_signup',
+};
+const RECAPTCHA_SCORE_THRESHOLD = Number(process.env.RECAPTCHA_SCORE_THRESHOLD || 0.5);
+
+const verifyRecaptchaToken = async (captchaToken, expectedAction) => {
+  if (!process.env.RECAPTCHA_SECRET_KEY) {
+    return { success: false, message: 'reCAPTCHA is not configured on the server.' };
+  }
+
+  if (!captchaToken) {
+    return { success: false, message: 'reCAPTCHA verification failed. Please try again.' };
+  }
+
+  const body = new URLSearchParams({
+    secret: process.env.RECAPTCHA_SECRET_KEY,
+    response: captchaToken,
+  });
+
+  const response = await fetch(RECAPTCHA_VERIFY_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    return { success: false, message: 'reCAPTCHA verification failed. Please try again.' };
+  }
+
+  if (typeof result.score === 'number' && result.score < RECAPTCHA_SCORE_THRESHOLD) {
+    return { success: false, message: 'reCAPTCHA score was too low. Please try again.' };
+  }
+
+  if (expectedAction && result.action && result.action !== expectedAction) {
+    return { success: false, message: 'reCAPTCHA action did not match the request.' };
+  }
+
+  return { success: true };
+};
 /**
  * @desc    Register a new user
  * @route   POST /auth/register
  * @access  Public
  */
 export const registerUser = async (req, res) => {
-  const { name, email, password, role, number, googleMyBusinessLink } = req.body;
+  const { name, email, password, role, number, googleMyBusinessLink, captchaToken } = req.body;
   try {    
+    const recaptchaResult = await verifyRecaptchaToken(captchaToken, RECAPTCHA_ACTIONS.signup);
+    if (!recaptchaResult.success) {
+      return res.status(400).json({ message: recaptchaResult.message, success: false });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists',success:false });
@@ -24,7 +75,14 @@ export const registerUser = async (req, res) => {
       role
        });
     await newUser.save();
-    res.status(201).json({ message: 'User registered successfully',success:true });
+    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    res.cookie('customerAccessToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    res.status(201).json({ message: 'User registered successfully', success: true, token });
   } catch (error) {
     res.status(500).json({ message: 'Server error',success:false });
   }
@@ -36,8 +94,13 @@ export const registerUser = async (req, res) => {
  * @access  Public
  */
 export const registerVendor = async (req, res) => {
-  const { email, password, number, googleMyBusinessLink, businessName, gstNumber } = req.body;
+  const { email, password, number, googleMyBusinessLink, businessName, gstNumber, captchaToken } = req.body;
   try {
+    const recaptchaResult = await verifyRecaptchaToken(captchaToken, RECAPTCHA_ACTIONS.vendorSignup);
+    if (!recaptchaResult.success) {
+      return res.status(400).json({ message: recaptchaResult.message, success: false });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists', success: false });
