@@ -21,7 +21,8 @@ const createMailTransport = () => {
 };
 
 const sendVendorApprovalEmail = async (vendor) => {
-  const transporter = createMailTransport();
+  try {
+    const transporter = createMailTransport();
   const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
   const businessName = vendor.businessName || vendor.name || 'your business';
 
@@ -41,6 +42,9 @@ const sendVendorApprovalEmail = async (vendor) => {
       </div>
     `,
   });
+  } catch (error) {
+    console.error('Failed to send vendor approval email:', error.message);
+  }
 };
 
 export const getUsers = async (req, res) => {
