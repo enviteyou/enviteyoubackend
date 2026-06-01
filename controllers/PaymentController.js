@@ -67,17 +67,12 @@ const sendInvitationEmail = async (user, invitation) => {
 		return { sent: false, error: 'no_recipient_email' };
 	}
 
-	try {
-		const transporter = createMailTransport();
-	} catch (error) {
-		console.error('Mail transporter verify failed:', error.message)
-	}
+	const transporter = createMailTransport();
 	const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
 	const inviteUrl = `${appUrl}/invite/${encodeURIComponent(invitation.slug)}`;
 	const coupleName = [invitation.bride, invitation.groom].filter(Boolean).join(' & ') || 'your invitation';
 
 	try {
-		// Verify SMTP connectivity first to provide clearer diagnostics
 		await transporter.verify();
 	} catch (verifyErr) {
 		console.error('Mail transporter verify failed:', verifyErr.message);
