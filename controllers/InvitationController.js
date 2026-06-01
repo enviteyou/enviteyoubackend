@@ -73,7 +73,7 @@ try {
  */
 export const getInvitationBySlug = async (req,res)=>{
   try {
-    const invitation = await Invitation.findOne({slug:req.params.slug});
+    const invitation = await Invitation.findOne({slug:req.params.slug}).populate("createdBy", "name email");
     if(!invitation){
       return res.status(404).json({
         success:false,
@@ -91,6 +91,31 @@ export const getInvitationBySlug = async (req,res)=>{
     })
   }
 }
+
+/**
+ * @description Get an invitation by id
+ */
+export const getInvitationById = async (req, res) => {
+  try {
+    const invitation = await Invitation.findById(req.params.id).populate("createdBy", "name email");
+    if (!invitation) {
+      return res.status(404).json({
+        success: false,
+        message: "Invitation not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: invitation,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 /**
  * @description Get all invitations created by the logged-in user
