@@ -66,13 +66,13 @@ const sendInvitationEmail = async (user, invitation) => {
 		console.log('User email is missing, cannot send invitation email');
 		return { sent: false, error: 'no_recipient_email' };
 	}
-
+	try {
 	const transporter = createMailTransport();
 	const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
 	const inviteUrl = `${appUrl}/invite/${encodeURIComponent(invitation.slug)}`;
 	const coupleName = [invitation.bride, invitation.groom].filter(Boolean).join(' & ') || 'your invitation';
 
-	try {
+
 		await transporter.verify();
 	} catch (verifyErr) {
 		console.error('Mail transporter verify failed:', verifyErr.message);
