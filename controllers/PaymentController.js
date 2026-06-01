@@ -30,7 +30,9 @@ const createMailTransport = () => {
 	}
 
 	return nodemailer.createTransport({
-		service: 'gmail',
+		host: "smtp.gmail.com",
+		port: 465,
+		secure: true,
 		auth: { user, pass },
 	});
 };
@@ -60,14 +62,16 @@ const buildInvitationPayload = (invitationData, createdBy, paymentDetails = {}) 
 };
 
 const sendInvitationEmail = async (user, invitation) => {
-	if (!user?.email) 
-    
- {
-  console.log('User email is missing, cannot send invitation email');
-return { sent: false, error: 'no_recipient_email' };
- }   
+	if (!user?.email) {
+		console.log('User email is missing, cannot send invitation email');
+		return { sent: false, error: 'no_recipient_email' };
+	}
 
-	const transporter = createMailTransport();
+	try {
+		const transporter = createMailTransport();
+	} catch (error) {
+		console.error('Mail transporter verify failed:', error.message)
+	}
 	const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
 	const inviteUrl = `${appUrl}/invite/${encodeURIComponent(invitation.slug)}`;
 	const coupleName = [invitation.bride, invitation.groom].filter(Boolean).join(' & ') || 'your invitation';

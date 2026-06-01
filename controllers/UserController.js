@@ -10,27 +10,27 @@ const createMailTransport = () => {
   }
 
   return nodemailer.createTransport({
-     host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // use STARTTLS (upgrade connection to TLS after connecting)
-  auth: {
-    user: user,
-    pass: pass,
-  },
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: user,
+      pass: pass,
+    },
   });
 };
 
 const sendVendorApprovalEmail = async (vendor) => {
   try {
     const transporter = createMailTransport();
-  const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
-  const businessName = vendor.businessName || vendor.name || 'your business';
+    const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
+    const businessName = vendor.businessName || vendor.name || 'your business';
 
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER?.trim(),
-    to: vendor.email,
-    subject: 'Your EnviteYou vendor account has been approved',
-    html: `
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER?.trim(),
+      to: vendor.email,
+      subject: 'Your EnviteYou vendor account has been approved',
+      html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
         <p>Hello ${vendor.name || 'Vendor'},</p>
         <p>Your vendor account for <strong>${businessName}</strong> has been approved by our admin team.</p>
@@ -41,7 +41,7 @@ const sendVendorApprovalEmail = async (vendor) => {
         <p>Thank you,<br/>EnviteYou Team</p>
       </div>
     `,
-  });
+    });
   } catch (error) {
     console.error('Failed to send vendor approval email:', error.message);
   }
