@@ -10,14 +10,12 @@ const createMailTransport = () => {
   }
 
   return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    family: 4,
-    auth: {
-      user: user,
-      pass: pass,
-    },
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,      // port 587 uses STARTTLS, NOT SSL
+    requireTLS: true,   // enforce STARTTLS upgrade
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false },
   });
 };
 
