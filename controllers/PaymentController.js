@@ -31,7 +31,10 @@ const createMailTransport = () => {
 
 	return nodemailer.createTransport({
 		host: "smtp.gmail.com",
-		port: 465,
+tls: {
+        ciphers: "SSLv3",
+    },
+    port: 587,
 		secure: true,
 		auth: { user, pass },
 	});
