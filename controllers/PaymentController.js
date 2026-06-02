@@ -31,12 +31,12 @@ const createMailTransport = () => {
 
 	return nodemailer.createTransport({
 		host: "smtp.gmail.com",
-tls: {
-        ciphers: "SSLv3",
-    },
-    port: 587,
+		port: 465,
 		secure: true,
 		auth: { user, pass },
+		tls: {
+			rejectUnauthorized: false,
+		},
 	});
 };
 
@@ -69,13 +69,14 @@ const sendInvitationEmail = async (user, invitation) => {
 		console.log('User email is missing, cannot send invitation email');
 		return { sent: false, error: 'no_recipient_email' };
 	}
-	try {
-	const transporter = createMailTransport();
+
 	const appUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:3000';
 	const inviteUrl = `${appUrl}/invite/${encodeURIComponent(invitation.slug)}`;
 	const coupleName = [invitation.bride, invitation.groom].filter(Boolean).join(' & ') || 'your invitation';
 
-
+	let transporter;
+	try {
+		transporter = createMailTransport();
 		await transporter.verify();
 	} catch (verifyErr) {
 		console.error('Mail transporter verify failed:', verifyErr.message);
