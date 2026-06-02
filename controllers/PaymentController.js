@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import dns from 'node:dns';
 import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
@@ -33,10 +34,12 @@ const createMailTransport = () => {
 		host: "smtp.gmail.com",
 		port: 465,
 		secure: true,
-		family: 4,
 		auth: { user, pass },
 		tls: {
 			rejectUnauthorized: false,
+		},
+		lookup: (hostname, options, callback) => {
+			dns.lookup(hostname, { ...options, family: 4 }, callback);
 		},
 	});
 };
