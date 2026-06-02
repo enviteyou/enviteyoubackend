@@ -36,6 +36,7 @@ const createMailTransport = () => {
 		requireTLS: true,   // enforce STARTTLS upgrade
 		auth: { user, pass },
 		tls: { rejectUnauthorized: false },
+		connectionTimeout: 10000,
 	});
 };
 
