@@ -1,5 +1,4 @@
 import User from '../models/user.js';
-import dns from 'node:dns';
 import nodemailer from 'nodemailer';
 
 const createMailTransport = () => {
@@ -14,12 +13,10 @@ const createMailTransport = () => {
     host: "smtp.gmail.com",
     port: 465,
     secure: true,
+    family: 4,
     auth: {
       user: user,
       pass: pass,
-    },
-    lookup: (hostname, options, callback) => {
-      dns.lookup(hostname, { ...options, family: 4 }, callback);
     },
   });
 };

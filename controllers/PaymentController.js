@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import dns from 'node:dns';
 import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
@@ -31,16 +30,10 @@ const createMailTransport = () => {
 	}
 
 	return nodemailer.createTransport({
-		host: "smtp.gmail.com",
-		port: 465,
-		secure: true,
+		host: "smtp-relay.brevo.com",
+		port: 587,
+		secure: false,
 		auth: { user, pass },
-		tls: {
-			rejectUnauthorized: false,
-		},
-		lookup: (hostname, options, callback) => {
-			dns.lookup(hostname, { ...options, family: 4 }, callback);
-		},
 	});
 };
 
@@ -89,7 +82,7 @@ const sendInvitationEmail = async (user, invitation) => {
 
 	try {
 		await transporter.sendMail({
-			from: process.env.EMAIL_USER?.trim(),
+			from: `"EnviteYou" <srivastavaraghav305@gmail.com>`,
 			to: user.email,
 			subject: 'Your invitation has been created successfully',
 			html: `
