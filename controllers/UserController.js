@@ -99,6 +99,7 @@ export const updateVendorAuthentication = async (req, res) => {
     const safeVendor = await User.findById(vendor._id).select('-password');
     return res.status(200).json({ message: 'Vendor status updated', success: true, vendor: safeVendor });
   } catch (err) {
+    console.log("Error occur during vendor", err.message)
     return res.status(500).json({ message: 'Server error', success: false });
   }
 };
