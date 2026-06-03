@@ -11,7 +11,7 @@ const createMailTransport = () => {
 
   return nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 587,
+    port: 2525,
     secure: false,      // port 587 uses STARTTLS, NOT SSL
     requireTLS: true,   // enforce STARTTLS upgrade
     auth: { user, pass },
