@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer';
 import Razorpay from 'razorpay';
 import Invitation from '../models/invitation.js';
 import User from '../models/user.js';
+import Template from '../models/template.js';
 import PDFDocument from 'pdfkit';
 
 const getRazorpayClient = () => {
@@ -116,7 +117,17 @@ const getInvitationAmountInPaise = () => {
 export const createPaymentOrder = async (req, res) => {
 	try {
 		const razorpay = getRazorpayClient();
-		const amount = getInvitationAmountInPaise();
+		const { templateId } = req.body || {};
+
+		// Fetch price from template schema
+		let amountInRupees = 400; // safe fallback
+		if (templateId) {
+			const template = await Template.findOne({ templateId: String(templateId).trim() });
+			if (template && template.sellPrice > 0) {
+				amountInRupees = template.sellPrice;
+			}
+		}
+		const amount = Math.max(1, amountInRupees) * 100; // convert to paise
 
 		const order = await razorpay.orders.create({
 			amount,
@@ -177,7 +188,7 @@ export const verifyPaymentAndCreateInvitation = async (req, res) => {
 		const invitationPayload = buildInvitationPayload(invitationData, creatorId, {
 			razorpayOrderId: razorpay_order_id,
 			razorpayPaymentId: razorpay_payment_id,
-			amountPaid: getInvitationAmountInPaise(),
+			amountPaid: req.body.orderAmount || getInvitationAmountInPaise(),
 		});
 
 		const invitation = await Invitation.create(invitationPayload);
