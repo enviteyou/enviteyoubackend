@@ -26,7 +26,7 @@ const sendVendorApprovalEmail = async (vendor) => {
     const businessName = vendor.businessName || vendor.name || 'your business';
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER?.trim(),
+      from: `"EnviteYou" <srivastavaraghav305@gmail.com>`,
       to: vendor.email,
       subject: 'Your EnviteYou vendor account has been approved',
       html: `
