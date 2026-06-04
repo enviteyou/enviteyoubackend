@@ -40,6 +40,10 @@ const templateSchema = new mongoose.Schema(
 			trim: true,
 			index: true,
 		},
+		allowedTabs: {
+			type: [String],
+			default: ["Essentials", "Invitation", "Events", "Story", "Gallery", "Info", "RSVP", "Music"],
+		},
 	},
 	{
 		timestamps: true,

@@ -52,6 +52,22 @@ export const createTemplate = async (req, res) => {
     const uploadResult = await uploadImage(featuredImageFile);
     const templateId = String(req.body.templateId || (await getNextTemplateId())).trim();
 
+    let allowedTabs = ["Essentials", "Invitation", "Events", "Story", "Gallery", "Info", "RSVP", "Music"];
+    if (req.body.allowedTabs) {
+      try {
+        const parsed = typeof req.body.allowedTabs === 'string'
+          ? JSON.parse(req.body.allowedTabs)
+          : req.body.allowedTabs;
+        if (Array.isArray(parsed)) {
+          allowedTabs = parsed;
+        }
+      } catch (err) {
+        if (typeof req.body.allowedTabs === 'string') {
+          allowedTabs = req.body.allowedTabs.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
     const template = await Template.create({
       templateId,
       category: req.body.category,
@@ -61,6 +77,7 @@ export const createTemplate = async (req, res) => {
       title: req.body.title,
       description: req.body.description,
       featuredImage: uploadResult.secure_url,
+      allowedTabs,
     });
 
     return res.status(201).json({
@@ -111,6 +128,22 @@ export const updateTemplate = async (req, res) => {
       imageUrl = uploadResult.secure_url;
     }
 
+    let allowedTabs = template.allowedTabs;
+    if (req.body.allowedTabs !== undefined) {
+      try {
+        const parsed = typeof req.body.allowedTabs === 'string'
+          ? JSON.parse(req.body.allowedTabs)
+          : req.body.allowedTabs;
+        if (Array.isArray(parsed)) {
+          allowedTabs = parsed;
+        }
+      } catch (err) {
+        if (typeof req.body.allowedTabs === 'string') {
+          allowedTabs = req.body.allowedTabs.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
     const updateTemplate = await Template.findByIdAndUpdate(
       req.params.id,
       {
@@ -122,6 +155,7 @@ export const updateTemplate = async (req, res) => {
         title: req.body.title,
         description: req.body.description,
         featuredImage: imageUrl,
+        allowedTabs,
       },
       { new: true }
     );
