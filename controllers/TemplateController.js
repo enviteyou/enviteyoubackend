@@ -51,19 +51,16 @@ export const createTemplate = async (req, res) => {
 
     const uploadResult = await uploadImage(featuredImageFile);
     const templateId = String(req.body.templateId || (await getNextTemplateId())).trim();
-    const secondaryImage = await getImageUrlFromRequest(req, "secondaryImage", uploadResult.secure_url);
 
     const template = await Template.create({
       templateId,
       category: req.body.category,
       pricing: req.body.pricing,
-      regularPrice: Number(req.body.regularPrice),
       sellPrice: Number(req.body.sellPrice),
       vendorPrice: Number(req.body.vendorPrice),
       title: req.body.title,
       description: req.body.description,
       featuredImage: uploadResult.secure_url,
-      secondaryImage,
     });
 
     return res.status(201).json({
@@ -114,23 +111,17 @@ export const updateTemplate = async (req, res) => {
       imageUrl = uploadResult.secure_url;
     }
 
-    const secondaryImage = req.files?.secondaryImage?.[0]
-      ? (await uploadImage(req.files.secondaryImage[0])).secure_url
-      : String(req.body.secondaryImage || template.secondaryImage || template.featuredImage || "").trim();
-
     const updateTemplate = await Template.findByIdAndUpdate(
       req.params.id,
       {
         templateId: req.body.templateId !== undefined && String(req.body.templateId).trim() ? String(req.body.templateId).trim() : template.templateId,
         category: req.body.category,
         pricing: req.body.pricing,
-        regularPrice: req.body.regularPrice !== undefined ? Number(req.body.regularPrice) : template.regularPrice,
         sellPrice: req.body.sellPrice !== undefined ? Number(req.body.sellPrice) : template.sellPrice,
         vendorPrice: req.body.vendorPrice !== undefined ? Number(req.body.vendorPrice) : template.vendorPrice,
         title: req.body.title,
         description: req.body.description,
         featuredImage: imageUrl,
-        secondaryImage,
       },
       { new: true }
     );

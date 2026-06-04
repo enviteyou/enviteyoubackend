@@ -12,7 +12,6 @@ const router = Router();
 
 const templateUpload = upload.fields([
   { name: "featuredImage", maxCount: 1 },
-  { name: "secondaryImage", maxCount: 1 },
 ]);
 
 router.get("/", getTemplates);
