@@ -148,6 +148,7 @@ export const loginUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: true, // CHIPS specification: allows modern Incognito to accept cross-site auth cookies
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
     res.status(200).json({ token, success: true });
