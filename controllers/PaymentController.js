@@ -86,7 +86,7 @@ const sendInvitationEmail = async (user, invitation) => {
 
 	try {
 		await transporter.sendMail({
-			from: `"EnviteYou" <srivastavaraghav305@gmail.com>`,
+			from: `"EnviteYou" <theenviteyou@gmail.com>`,
 			to: user.email,
 			subject: 'Your invitation has been created successfully',
 			html: `
