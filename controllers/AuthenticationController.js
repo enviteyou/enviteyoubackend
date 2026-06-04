@@ -293,6 +293,9 @@ export const logoutUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: true, // MUST match your login configuration to clear properly
+      // domain: '.enviteyou.com', // Uncomment this if you implemented the subdomain option
+      path: '/', // Ensures the cookie clears globally across all routes
     });
     res.clearCookie('vendorAccessToken', {
       httpOnly: true,
