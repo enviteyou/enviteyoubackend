@@ -183,6 +183,7 @@ export const loginVendor = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: true,
       maxAge: 24 * 60 * 60 * 1000,
     });
     res.status(200).json({ token, success: true });
@@ -216,6 +217,7 @@ export const loginAdmin = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: true,
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
     res.status(200).json({ token, success: true });
@@ -300,11 +302,13 @@ export const logoutUser = async (req, res) => {
     res.clearCookie('vendorAccessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      partitioned: true,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
     res.clearCookie('adminAccessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      partitioned: true,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
     return res.status(200).json({ success: true, message: 'Logged out successfully' });
@@ -343,6 +347,7 @@ export const googleLogin = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: true,
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
     res.status(200).json({ message: 'Login successful', accesstoken, success: true });
