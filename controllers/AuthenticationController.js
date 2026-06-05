@@ -80,6 +80,7 @@ export const registerUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: process.env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000,
     });
     res.status(201).json({ message: 'User registered successfully', success: true, token });
@@ -154,7 +155,7 @@ export const loginUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      partitioned: true, // CHIPS specification: allows modern Incognito to accept cross-site auth cookies
+      partitioned: process.env.NODE_ENV === 'production', // CHIPS specification: allows modern Incognito to accept cross-site auth cookies
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
     res.status(200).json({ token, success: true });
@@ -189,7 +190,7 @@ export const loginVendor = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      partitioned: true,
+      partitioned: process.env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000,
     });
     res.status(200).json({ token, success: true });
@@ -223,7 +224,7 @@ export const loginAdmin = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      partitioned: true,
+      partitioned: process.env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
     res.status(200).json({ token, success: true });
@@ -301,20 +302,20 @@ export const logoutUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      partitioned: true,
+      partitioned: process.env.NODE_ENV === 'production',
       path: '/',
     });
     res.clearCookie('vendorAccessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      partitioned: true,
+      partitioned: process.env.NODE_ENV === 'production',
       path: '/',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
     res.clearCookie('adminAccessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      partitioned: true,
+      partitioned: process.env.NODE_ENV === 'production',
       path: '/',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
@@ -360,7 +361,7 @@ export const googleLogin = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      partitioned: true,
+      partitioned: process.env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
     res.status(200).json({ message: 'Login successful', accesstoken, success: true });
