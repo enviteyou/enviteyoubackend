@@ -143,6 +143,12 @@ export const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials', success: false });
     }
+    if (user.role === 'vendor') {
+      return res.status(400).json({ message: 'Invalid user credentials.Please login in vendor panel', role: user.role, success: false });
+    }
+    if (user.role === 'admin') {
+      return res.status(400).json({ message: 'Invalid user credentials.Please login in admin panel', role: user.role, success: false });
+    }
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
     res.cookie('customerAccessToken', token, {
       httpOnly: true,
@@ -295,20 +301,21 @@ export const logoutUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      partitioned: true, // MUST match your login configuration to clear properly
-      // domain: '.enviteyou.com', // Uncomment this if you implemented the subdomain option
-      path: '/', // Ensures the cookie clears globally across all routes
+      partitioned: true,
+      path: '/',
     });
     res.clearCookie('vendorAccessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       partitioned: true,
+      path: '/',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
     res.clearCookie('adminAccessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       partitioned: true,
+      path: '/',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
     return res.status(200).json({ success: true, message: 'Logged out successfully' });
