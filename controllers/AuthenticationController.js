@@ -341,6 +341,12 @@ export const googleLogin = async (req, res) => {
     const { name, email } = ticket.getPayload();
     const { role } = req.body;
     let user = await User.findOne({ email });
+    if (user.role === 'vendor') {
+      return res.status(400).json({ message: 'Invalid user credentials.Please login in vendor panel', role: user.role, success: false });
+    }
+    if (user.role === 'admin') {
+      return res.status(400).json({ message: 'Invalid user credentials.Please login in admin panel', role: user.role, success: false });
+    }
     if (!user) {
       user = await User.create({
         name,
