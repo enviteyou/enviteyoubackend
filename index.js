@@ -7,6 +7,8 @@ import templateRoutes from './routes/TemplateRoutes.js';
 import paymentRoutes from './routes/PaymentRoutes.js';
 import userRoutes from './routes/UserRoutes.js';
 import reviewRoutes from './routes/ReviewRoutes.js';
+import blogRoutes from './routes/BlogRoutes.js';
+import enquiryRoutes from './routes/EnquiryRoutes.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
@@ -25,6 +27,8 @@ app.use('/templates',templateRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/users', userRoutes);
 app.use('/reviews', reviewRoutes);
+app.use('/blogs', blogRoutes);
+app.use('/enquiries', enquiryRoutes);
 
 const PORT = process.env.PORT || 5000;
 
