@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 const authUser = async (req,res,next)=>{
   try {
-    const authToken = req.cookies.customerAccessToken;
+    const authToken = req.cookies.customerAccessToken || req.cookies.vendorAccessToken || req.header('Authorization')?.replace('Bearer ', '');
     if(!authToken){
       return res.status(401).json({message:"No token provided",success:false})
     }

@@ -123,8 +123,20 @@ export const createPaymentOrder = async (req, res) => {
 		let amountInRupees = 400; // safe fallback
 		if (templateId) {
 			const template = await Template.findOne({ templateId: String(templateId).trim() });
-			if (template && template.sellPrice > 0) {
-				amountInRupees = template.sellPrice;
+			if (template) {
+				let isVendorUser = false;
+				if (req.user?.id) {
+					const dbUser = await User.findById(req.user.id);
+					if (dbUser && dbUser.role === 'vendor') {
+						isVendorUser = true;
+					}
+				}
+
+				if (isVendorUser && template.vendorPrice !== undefined && template.vendorPrice >= 0) {
+					amountInRupees = template.vendorPrice;
+				} else if (template.sellPrice > 0) {
+					amountInRupees = template.sellPrice;
+				}
 			}
 		}
 		const amount = Math.max(1, amountInRupees) * 100; // convert to paise
