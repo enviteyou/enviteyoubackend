@@ -7,6 +7,7 @@ import Invitation from '../models/invitation.js';
 import User from '../models/user.js';
 import Template from '../models/template.js';
 import PDFDocument from 'pdfkit';
+import jwt from 'jsonwebtoken';
 
 const getRazorpayClient = () => {
 	const keyId = process.env.RAZORPAY_KEY_ID?.trim();
@@ -117,7 +118,7 @@ const getInvitationAmountInPaise = () => {
 export const createPaymentOrder = async (req, res) => {
 	try {
 		const razorpay = getRazorpayClient();
-		const { templateId } = req.body || {};
+		const { templateId, isVendor } = req.body || {};
 
 		// Fetch price from template schema
 		let amountInRupees = 400; // safe fallback
@@ -125,7 +126,23 @@ export const createPaymentOrder = async (req, res) => {
 			const template = await Template.findOne({ templateId: String(templateId).trim() });
 			if (template) {
 				let isVendorUser = false;
-				if (req.user?.id) {
+				if (isVendor) {
+					const vendorToken = req.cookies?.vendorAccessToken;
+					if (vendorToken) {
+						try {
+							const decoded = jwt.verify(vendorToken, process.env.JWT_SECRET);
+							if (decoded.id) {
+								const dbUser = await User.findById(decoded.id);
+								if (dbUser && dbUser.role === 'vendor') {
+									isVendorUser = true;
+									req.user = decoded;
+								}
+							}
+						} catch (e) {}
+					}
+				}
+
+				if (!isVendorUser && req.user?.id) {
 					const dbUser = await User.findById(req.user.id);
 					if (dbUser && dbUser.role === 'vendor') {
 						isVendorUser = true;
@@ -168,6 +185,7 @@ export const verifyPaymentAndCreateInvitation = async (req, res) => {
 			razorpay_payment_id,
 			razorpay_signature,
 			invitationData,
+			isVendor,
 		} = req.body || {};
 
 		if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -190,6 +208,21 @@ export const verifyPaymentAndCreateInvitation = async (req, res) => {
 
 		if (expectedSignature !== razorpay_signature) {
 			return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+		}
+
+		if (isVendor) {
+			const vendorToken = req.cookies?.vendorAccessToken;
+			if (vendorToken) {
+				try {
+					const decoded = jwt.verify(vendorToken, process.env.JWT_SECRET);
+					if (decoded.id) {
+						const dbUser = await User.findById(decoded.id);
+						if (dbUser && dbUser.role === 'vendor') {
+							req.user = decoded;
+						}
+					}
+				} catch (e) {}
+			}
 		}
 
 		const creatorId = req.user?.id || invitationData.createdBy || invitationData.creatorId;
@@ -238,7 +271,28 @@ export const getMyPayments = async (req, res) => {
 		const userId = req.user?.id;
 		if (!userId) return res.status(401).json({ success: false, message: 'Not authenticated' });
 
-		const payments = await Invitation.find({ createdBy: userId, paymentStatus: { $exists: true } })
+		const customerToken = req.cookies?.customerAccessToken;
+		const vendorToken = req.cookies?.vendorAccessToken;
+		const userIds = [userId];
+
+		if (customerToken) {
+			try {
+				const decoded = jwt.verify(customerToken, process.env.JWT_SECRET);
+				if (decoded.id && !userIds.includes(decoded.id)) {
+					userIds.push(decoded.id);
+				}
+			} catch (e) {}
+		}
+		if (vendorToken) {
+			try {
+				const decoded = jwt.verify(vendorToken, process.env.JWT_SECRET);
+				if (decoded.id && !userIds.includes(decoded.id)) {
+					userIds.push(decoded.id);
+				}
+			} catch (e) {}
+		}
+
+		const payments = await Invitation.find({ createdBy: { $in: userIds }, paymentStatus: { $exists: true } })
 			.sort({ createdAt: -1 })
 			.select('bride groom createdAt amountPaid paymentStatus razorpayOrderId razorpayPaymentId slug');
 
@@ -268,11 +322,33 @@ export const generateInvoicePdf = async (req, res) => {
 		const id = req.params.id;
 		if (!id) return res.status(400).json({ success: false, message: 'Invoice id is required' });
 
+		const customerToken = req.cookies?.customerAccessToken;
+		const vendorToken = req.cookies?.vendorAccessToken;
+		const userIds = [userId];
+
+		if (customerToken) {
+			try {
+				const decoded = jwt.verify(customerToken, process.env.JWT_SECRET);
+				if (decoded.id && !userIds.includes(decoded.id)) {
+					userIds.push(decoded.id);
+				}
+			} catch (e) {}
+		}
+		if (vendorToken) {
+			try {
+				const decoded = jwt.verify(vendorToken, process.env.JWT_SECRET);
+				if (decoded.id && !userIds.includes(decoded.id)) {
+					userIds.push(decoded.id);
+				}
+			} catch (e) {}
+		}
+
 		const invitation = await Invitation.findById(id).populate('createdBy', 'name email');
 		if (!invitation) return res.status(404).json({ success: false, message: 'Invitation not found' });
 
 		// ensure the user owns this invitation
-		if (String(invitation.createdBy?._id || invitation.createdBy) !== String(userId)) {
+		const creatorId = String(invitation.createdBy?._id || invitation.createdBy);
+		if (!userIds.includes(creatorId)) {
 			return res.status(403).json({ success: false, message: 'Forbidden' });
 		}
 

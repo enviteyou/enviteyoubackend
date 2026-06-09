@@ -130,7 +130,28 @@ export const getMyInvitations = async (req, res) => {
       });
     }
 
-    const invitations = await Invitation.find({ createdBy: creatorId }).sort({ createdAt: -1 });
+    const customerToken = req.cookies?.customerAccessToken;
+    const vendorToken = req.cookies?.vendorAccessToken;
+    const userIds = [creatorId];
+
+    if (customerToken) {
+      try {
+        const decoded = jwt.verify(customerToken, process.env.JWT_SECRET);
+        if (decoded.id && !userIds.includes(decoded.id)) {
+          userIds.push(decoded.id);
+        }
+      } catch (e) {}
+    }
+    if (vendorToken) {
+      try {
+        const decoded = jwt.verify(vendorToken, process.env.JWT_SECRET);
+        if (decoded.id && !userIds.includes(decoded.id)) {
+          userIds.push(decoded.id);
+        }
+      } catch (e) {}
+    }
+
+    const invitations = await Invitation.find({ createdBy: { $in: userIds } }).sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
