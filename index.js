@@ -9,6 +9,7 @@ import userRoutes from './routes/UserRoutes.js';
 import reviewRoutes from './routes/ReviewRoutes.js';
 import blogRoutes from './routes/BlogRoutes.js';
 import enquiryRoutes from './routes/EnquiryRoutes.js';
+import photoSelectionRoutes from './routes/PhotoSelectionRoutes.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
@@ -29,6 +30,7 @@ app.use('/users', userRoutes);
 app.use('/reviews', reviewRoutes);
 app.use('/blogs', blogRoutes);
 app.use('/enquiries', enquiryRoutes);
+app.use('/photo-selection', photoSelectionRoutes);
 
 const PORT = process.env.PORT || 5000;
 
