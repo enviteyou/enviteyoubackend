@@ -202,7 +202,7 @@ export const getSelectedPhotosForCopy = async (req, res) => {
       _id: { $in: project.selectedPhotoIds },
     }).select("originalFileName originalBaseName");
 
-    return res.status(200).json({ success: true, selectedPhotos });
+    return res.status(200).json({ success: true, selectedPhotos, project });
   } catch (error) {
     console.error("getSelectedPhotosForCopy error", error.message);
     return res.status(500).json({ message: "Server error", success: false });
@@ -317,6 +317,48 @@ export const submitClientSelection = async (req, res) => {
     return res.status(200).json({ success: true, message: "Selection submitted successfully" });
   } catch (error) {
     console.error("submitClientSelection error", error.message);
+    return res.status(500).json({ message: "Server error", success: false });
+  }
+};
+
+// Delete a project and remove all its files from Cloudinary and DB
+export const deleteProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const vendorId = req.user.id;
+
+    // 1. Find the project and verify ownership
+    const project = await PhotoSelectionProject.findOne({ _id: projectId, vendorId });
+    if (!project) {
+      return res.status(404).json({ message: "Project not found", success: false });
+    }
+
+    // 2. Find all photos associated with this project
+    const photos = await Photo.find({ projectId });
+
+    // 3. Delete photos from Cloudinary
+    const publicIds = photos.map((p) => p.cloudinaryPublicId).filter(Boolean);
+    if (publicIds.length > 0) {
+      try {
+        const chunks = [];
+        for (let i = 0; i < publicIds.length; i += 100) {
+          chunks.push(publicIds.slice(i, i + 100));
+        }
+        await Promise.all(chunks.map((chunk) => cloudinary.api.delete_resources(chunk)));
+      } catch (cloudinaryError) {
+        console.error("Cloudinary deletion failed during project delete:", cloudinaryError.message);
+      }
+    }
+
+    // 4. Delete photo records from database
+    await Photo.deleteMany({ projectId });
+
+    // 5. Delete the project record from database
+    await PhotoSelectionProject.deleteOne({ _id: projectId });
+
+    return res.status(200).json({ success: true, message: "Project and associated images deleted successfully" });
+  } catch (error) {
+    console.error("deleteProject error", error.message);
     return res.status(500).json({ message: "Server error", success: false });
   }
 };

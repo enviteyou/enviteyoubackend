@@ -10,6 +10,7 @@ import {
   getClientProject,
   getClientPhotos,
   submitClientSelection,
+  deleteProject,
 } from "../controllers/PhotoSelectionController.js";
 import authenticateVendor from "../middleware/authenticateVendor.js";
 
@@ -26,6 +27,7 @@ router.get("/projects/:projectId/photos", authenticateVendor, getProjectPhotos);
 router.post("/projects/:projectId/photos/bulk", authenticateVendor, bulkAddPhotos);
 router.post("/cloudinary-signature", authenticateVendor, generateCloudinarySignature);
 router.get("/projects/:projectId/selection-details", authenticateVendor, getSelectedPhotosForCopy);
+router.delete("/projects/:projectId", authenticateVendor, deleteProject);
 
 // ==========================================
 // CLIENT ROUTES (Public accessible via unique selection token)
