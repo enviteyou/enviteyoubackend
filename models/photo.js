@@ -22,6 +22,10 @@ const photoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  folderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ProjectFolder",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -29,6 +33,7 @@ const photoSchema = new mongoose.Schema({
 });
 
 photoSchema.index({ projectId: 1 });
+photoSchema.index({ folderId: 1 });
 
 const Photo = mongoose.model("Photo", photoSchema);
 export default Photo;
