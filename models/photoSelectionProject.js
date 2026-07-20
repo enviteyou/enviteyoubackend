@@ -16,7 +16,15 @@ const projectSchema = new mongoose.Schema({
   },
   clientEmail: {
     type: String,
-    required: true,
+    required: false,
+  },
+  clientPhone: {
+    type: String,
+    required: false,
+  },
+  enableLimitAlert: {
+    type: Boolean,
+    default: true,
   },
   selectionLimit: {
     type: Number,

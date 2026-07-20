@@ -11,11 +11,11 @@ import cloudinary from "../config/cloudinary.js";
 // Create a new project
 export const createProject = async (req, res) => {
   try {
-    const { projectName, clientName, clientEmail, selectionLimit } = req.body;
+    const { projectName, clientName, clientEmail, clientPhone, enableLimitAlert, selectionLimit } = req.body;
     const vendorId = req.user.id;
 
-    if (!projectName || !clientName || !clientEmail || !selectionLimit) {
-      return res.status(400).json({ message: "All fields are required", success: false });
+    if (!projectName || !clientName || !selectionLimit) {
+      return res.status(400).json({ message: "Project name, client name, and selection limit are required", success: false });
     }
 
     const selectionToken = crypto.randomBytes(16).toString("hex");
@@ -25,22 +25,15 @@ export const createProject = async (req, res) => {
       projectName,
       clientName,
       clientEmail,
+      clientPhone,
+      enableLimitAlert: enableLimitAlert !== undefined ? enableLimitAlert : true,
       selectionLimit,
       selectionToken,
     });
 
     await project.save();
 
-    // Automatically create default folders
-    const defaultFolders = ["Mehndi", "Haldi", "Wedding"];
-    const folderPromises = defaultFolders.map((name, index) => {
-      return new ProjectFolder({
-        projectId: project._id,
-        folderName: name,
-        displayOrder: index,
-      }).save();
-    });
-    await Promise.all(folderPromises);
+
 
     return res.status(201).json({ success: true, project });
   } catch (error) {
@@ -260,6 +253,7 @@ export const getClientProject = async (req, res) => {
         projectName: project.projectName,
         clientName: project.clientName,
         selectionLimit: project.selectionLimit,
+        enableLimitAlert: project.enableLimitAlert !== false,
         status: project.status,
         submittedAt: project.submittedAt,
         totalPhotos,
@@ -328,12 +322,7 @@ export const submitClientSelection = async (req, res) => {
       return res.status(404).json({ message: "Project not found", success: false });
     }
 
-    if (selectedPhotoIds.length > project.selectionLimit) {
-      return res.status(400).json({
-        message: `Selection limit exceeded. Maximum limit is ${project.selectionLimit} photos.`,
-        success: false,
-      });
-    }
+
 
     // Verify all photo IDs belong to this project
     const count = await Photo.countDocuments({
@@ -422,7 +411,7 @@ export const createFolder = async (req, res) => {
     // Check if duplicate name in project
     const existing = await ProjectFolder.findOne({ projectId, folderName: { $regex: new RegExp(`^${folderName.trim()}$`, "i") } });
     if (existing) {
-      return res.status(400).json({ message: "Folder with this name already exists", success: false });
+      return res.status(200).json({ success: true, folder: existing, message: "Folder already exists" });
     }
 
     // Get max displayOrder
@@ -643,12 +632,7 @@ export const saveClientProgress = async (req, res) => {
       return res.status(404).json({ message: "Project not found", success: false });
     }
 
-    if (selectedPhotoIds.length > project.selectionLimit) {
-      return res.status(400).json({
-        message: `Selection limit exceeded. Maximum limit is ${project.selectionLimit} photos.`,
-        success: false,
-      });
-    }
+
 
     // Verify all photo IDs belong to this project
     const count = await Photo.countDocuments({
