@@ -168,7 +168,7 @@ export const bulkAddPhotos = async (req, res) => {
 // Generate Cloudinary secure signature
 export const generateCloudinarySignature = async (req, res) => {
   try {
-    const { projectId, folderId } = req.body;
+    const { projectId, folderId } = req.body || {};
     const timestamp = Math.round(new Date().getTime() / 1000);
     
     let folder = `enviteyou/projects/${req.user.id}`;
