@@ -1,7 +1,26 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
 import User from '../models/user.js';
 import { OAuth2Client } from 'google-auth-library';
+
+const createMailTransport = () => {
+  const user = process.env.EMAIL_USER?.trim();
+  const pass = process.env.EMAIL_PASS?.trim();
+
+  if (!user || !pass) {
+    throw new Error('Email credentials are not configured');
+  }
+
+  return nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 2525,
+    secure: false,
+    requireTLS: true,
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false },
+  });
+};
 
 const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 const RECAPTCHA_ACTIONS = {
@@ -369,4 +388,150 @@ export const googleLogin = async (req, res) => {
     console.log("Error during google login:", error.message);
     res.status(500).json({ message: 'Server error', success: false });
   }
-}
+};
+
+/**
+ * @desc    Send OTP to user/vendor email for password reset
+ * @route   POST /auth/send-reset-otp
+ * @access  Public
+ */
+export const sendResetOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: "Email is required", success: false });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${normalizedEmail}$`, "i") } });
+
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email address", success: false });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    user.resetOtp = otp;
+    user.resetOtpExpires = otpExpires;
+    await user.save();
+
+    // Send Email
+    const transporter = createMailTransport();
+    const mailOptions = {
+      from: `"EnviteYou Support" <theenviteyou@gmail.com>`,
+      to: user.email,
+      subject: "Password Reset OTP - EnviteYou",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px;">
+          <h2 style="color: #111;">Password Reset Request</h2>
+          <p>Hi ${user.name || "there"},</p>
+          <p>You requested to reset your password. Use the following One-Time Password (OTP) to proceed:</p>
+          <div style="background: #f4f4f5; padding: 15px; text-align: center; border-radius: 8px; font-size: 26px; font-weight: bold; letter-spacing: 6px; margin: 20px 0; color: #000;">
+            ${otp}
+          </div>
+          <p style="font-size: 13px; color: #666;">This OTP is valid for 10 minutes. If you did not request a password reset, please ignore this email.</p>
+          <br/>
+          <p style="font-size: 13px; color: #999;">Best regards,<br/>EnviteYou Team</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent to your email successfully.",
+    });
+  } catch (error) {
+    console.error("sendResetOtp error:", error);
+    return res.status(500).json({ message: error.message || "Failed to send OTP", success: false });
+  }
+};
+
+/**
+ * @desc    Verify OTP for password reset
+ * @route   POST /auth/verify-reset-otp
+ * @access  Public
+ */
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required", success: false });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${normalizedEmail}$`, "i") } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found", success: false });
+    }
+
+    if (!user.resetOtp || user.resetOtp !== otp.trim()) {
+      return res.status(400).json({ message: "Invalid OTP code", success: false });
+    }
+
+    if (!user.resetOtpExpires || new Date(user.resetOtpExpires).getTime() < Date.now()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one.", success: false });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully.",
+    });
+  } catch (error) {
+    console.error("verifyResetOtp error:", error);
+    return res.status(500).json({ message: "Server error", success: false });
+  }
+};
+
+/**
+ * @desc    Reset password using verified OTP
+ * @route   POST /auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "All fields are required", success: false });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long", success: false });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${normalizedEmail}$`, "i") } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found", success: false });
+    }
+
+    if (!user.resetOtp || user.resetOtp !== otp.trim()) {
+      return res.status(400).json({ message: "Invalid OTP code", success: false });
+    }
+
+    if (!user.resetOtpExpires || new Date(user.resetOtpExpires).getTime() < Date.now()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one.", success: false });
+    }
+
+    // Hash new password and save
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetOtp = undefined;
+    user.resetOtpExpires = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully. You can now log in.",
+    });
+  } catch (error) {
+    console.error("resetPassword error:", error);
+    return res.status(500).json({ message: "Server error", success: false });
+  }
+};

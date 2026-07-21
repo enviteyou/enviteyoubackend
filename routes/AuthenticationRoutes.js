@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { googleLogin, loginUser, registerUser, loginAdmin, getCustomer,getAdmin,getVendor, logoutUser, registerVendor, loginVendor } from '../controllers/AuthenticationController.js';
+import { googleLogin, loginUser, registerUser, loginAdmin, getCustomer,getAdmin,getVendor, logoutUser, registerVendor, loginVendor, sendResetOtp, verifyResetOtp, resetPassword } from '../controllers/AuthenticationController.js';
 import authUser from '../middleware/authenticate.js';
 import authAdmin from '../middleware/authenticateAdmin.js';
 import authenticateVendor from '../middleware/authenticateVendor.js';
@@ -27,6 +27,11 @@ router.post('/vendor/login', loginVendor);
 
 // admin login - returns 403 if credentials valid but user is not admin
 router.post('/login-admin', loginAdmin);
+
+// Forgot Password / Reset Password routes (Public)
+router.post('/send-reset-otp', sendResetOtp);
+router.post('/verify-reset-otp', verifyResetOtp);
+router.post('/reset-password', resetPassword);
 
 // return current user from cookie token
 router.get('/me', getCustomer);
