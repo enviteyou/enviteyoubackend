@@ -273,7 +273,7 @@ export const getMyPayments = async (req, res) => {
 
 		const payments = await Invitation.find({ createdBy: userId, paymentStatus: { $exists: true } })
 			.sort({ createdAt: -1 })
-			.select('bride groom createdAt amountPaid paymentStatus razorpayOrderId razorpayPaymentId slug');
+			.select('bride groom createdAt amountPaid paymentStatus razorpayOrderId razorpayPaymentId slug coverImage');
 
 		const mapped = payments.map((p) => ({
 			id: p._id,
@@ -284,6 +284,7 @@ export const getMyPayments = async (req, res) => {
 			razorpayOrderId: p.razorpayOrderId || null,
 			razorpayPaymentId: p.razorpayPaymentId || null,
 			inviteSlug: p.slug || null,
+			coverImage: p.coverImage || null,
 		}));
 
 		return res.status(200).json({ success: true, count: mapped.length, data: mapped });
