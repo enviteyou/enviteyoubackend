@@ -271,28 +271,7 @@ export const getMyPayments = async (req, res) => {
 		const userId = req.user?.id;
 		if (!userId) return res.status(401).json({ success: false, message: 'Not authenticated' });
 
-		const customerToken = req.cookies?.customerAccessToken;
-		const vendorToken = req.cookies?.vendorAccessToken;
-		const userIds = [userId];
-
-		if (customerToken) {
-			try {
-				const decoded = jwt.verify(customerToken, process.env.JWT_SECRET);
-				if (decoded.id && !userIds.includes(decoded.id)) {
-					userIds.push(decoded.id);
-				}
-			} catch (e) {}
-		}
-		if (vendorToken) {
-			try {
-				const decoded = jwt.verify(vendorToken, process.env.JWT_SECRET);
-				if (decoded.id && !userIds.includes(decoded.id)) {
-					userIds.push(decoded.id);
-				}
-			} catch (e) {}
-		}
-
-		const payments = await Invitation.find({ createdBy: { $in: userIds }, paymentStatus: { $exists: true } })
+		const payments = await Invitation.find({ createdBy: userId, paymentStatus: { $exists: true } })
 			.sort({ createdAt: -1 })
 			.select('bride groom createdAt amountPaid paymentStatus razorpayOrderId razorpayPaymentId slug');
 
@@ -322,33 +301,12 @@ export const generateInvoicePdf = async (req, res) => {
 		const id = req.params.id;
 		if (!id) return res.status(400).json({ success: false, message: 'Invoice id is required' });
 
-		const customerToken = req.cookies?.customerAccessToken;
-		const vendorToken = req.cookies?.vendorAccessToken;
-		const userIds = [userId];
-
-		if (customerToken) {
-			try {
-				const decoded = jwt.verify(customerToken, process.env.JWT_SECRET);
-				if (decoded.id && !userIds.includes(decoded.id)) {
-					userIds.push(decoded.id);
-				}
-			} catch (e) {}
-		}
-		if (vendorToken) {
-			try {
-				const decoded = jwt.verify(vendorToken, process.env.JWT_SECRET);
-				if (decoded.id && !userIds.includes(decoded.id)) {
-					userIds.push(decoded.id);
-				}
-			} catch (e) {}
-		}
-
 		const invitation = await Invitation.findById(id).populate('createdBy', 'name email');
 		if (!invitation) return res.status(404).json({ success: false, message: 'Invitation not found' });
 
 		// ensure the user owns this invitation
 		const creatorId = String(invitation.createdBy?._id || invitation.createdBy);
-		if (!userIds.includes(creatorId)) {
+		if (creatorId !== String(userId)) {
 			return res.status(403).json({ success: false, message: 'Forbidden' });
 		}
 
